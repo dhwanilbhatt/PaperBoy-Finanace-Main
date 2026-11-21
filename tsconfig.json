@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "strict": true,
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "vite.config.ts",
+    "server.ts",
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.splat.js",
+    "**/*.jpg.js",
+    "**/*.png.js"
+  ]
+}

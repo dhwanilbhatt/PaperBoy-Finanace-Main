@@ -1,0 +1,706 @@
+import type {
+  BrentJourneyPoint,
+  CreditMetric,
+  DataCenterDeal,
+  ImportMixItem,
+  OilInstrument,
+  PolicyDateItem,
+  ScenarioItem,
+  TimelineEvent,
+  TransmissionStep,
+  WarStatusItem,
+} from '../types/macro';
+
+export const BRIEF_META = {
+  title: 'MacroLens',
+  subtitle: 'Real-Time Energy & Macro Intelligence for Emerging Market Analysts',
+  updatedAt: 'Wednesday, November 18, 2026 · 11:30 AM IST',
+  coreQuestion: 'Paper vs. Physical: Are they converging or diverging? When they converge, the war is over. Until they do, it is fragile.',
+};
+
+export const OIL_INSTRUMENTS: OilInstrument[] = [
+  {
+    id: 'brent-co1',
+    name: 'Brent CO1',
+    ticker: 'CO1 Comdty',
+    value: '$92.69',
+    numericValue: 92.69,
+    unit: 'USD/bbl',
+    signal: 'watch',
+    signalLabel: 'Watch',
+    interpretation: 'Paper price — supply surplus dominant',
+    isPmCore: true,
+  },
+  {
+    id: 'wti-cl1',
+    name: 'WTI CL1',
+    ticker: 'CL1 Comdty',
+    value: '$85.08',
+    numericValue: 85.08,
+    unit: 'USD/bbl',
+    signal: 'watch',
+    signalLabel: 'Watch',
+    interpretation: 'Confirmation signal — $7.61 Brent-WTI spread reflects Hormuz risk',
+  },
+  {
+    id: 'm1-m2',
+    name: 'M1–M2 Backwardation',
+    ticker: 'CO1–CO2',
+    value: '+$2.73',
+    numericValue: 2.73,
+    unit: 'USD/bbl',
+    signal: 'danger',
+    signalLabel: 'Danger',
+    interpretation: 'Physical tightness — war-level (above +$2.50 threshold)',
+    isPmCore: true,
+  },
+  {
+    id: 'dated-brent',
+    name: 'Dated Brent',
+    ticker: 'PCAAS00',
+    value: '$93.03',
+    numericValue: 93.03,
+    unit: 'USD/bbl',
+    signal: 'watch',
+    signalLabel: 'Watch',
+    interpretation: 'What physical buyers actually pay (+$0.34 over CO1 vs +$3.49 last week)',
+    isPmCore: true,
+  },
+  {
+    id: 'vlcc-freight',
+    name: 'VLCC Freight',
+    ticker: 'TD3C / Gulf-India',
+    value: '~$20/bbl',
+    numericValue: 20,
+    unit: 'USD/bbl',
+    signal: 'danger',
+    signalLabel: 'Danger',
+    interpretation: 'War tax on India — unchanged since Feb 28 mine campaign',
+  },
+  {
+    id: 'usd-inr',
+    name: 'USD/INR',
+    ticker: 'INR Spot',
+    value: '93.41',
+    numericValue: 93.41,
+    unit: 'INR per USD',
+    signal: 'relief',
+    signalLabel: 'Relief',
+    interpretation: 'India stress gauge — strongest since April, safely below 95.00 red line',
+  },
+  {
+    id: 'ttf-gas',
+    name: 'TTF Gas',
+    ticker: 'TZT1 Comdty',
+    value: '€85.31/MWh',
+    numericValue: 85.31,
+    unit: 'EUR/MWh',
+    signal: 'relief',
+    signalLabel: 'Relief',
+    interpretation: 'European energy signal — stable despite Qatar LNG cargo backlog',
+  },
+];
+
+export const BRENT_JOURNEY: BrentJourneyPoint[] = [
+  {
+    date: 'Nov 2 Open',
+    price: 111.69,
+    catalyst: 'Pre-midterm risk premium',
+    note: 'Market pricing unconstrained escalation before US midterm vote',
+  },
+  {
+    date: 'Nov 3–7',
+    price: 97.50,
+    catalyst: 'Democrat midterm sweep',
+    note: 'Brent falls $14 in one week — steepest weekly drop since COVID',
+  },
+  {
+    date: 'Nov 10',
+    price: 90.16,
+    catalyst: 'Trump "effectively over" remark',
+    note: 'War low; M1–M2 briefly eases to +$1.98 on peace-trade hopes',
+  },
+  {
+    date: 'Nov 13',
+    price: 91.40,
+    catalyst: 'Vance back-channel killed',
+    note: 'Strangulation strategy confirmed as official policy',
+  },
+  {
+    date: 'Nov 15',
+    price: 93.80,
+    catalyst: 'Supertanker sinks in Hormuz',
+    note: '2 million barrels lost; Houthis capture Bab el-Mandeb',
+  },
+  {
+    date: 'Nov 17',
+    price: 93.15,
+    catalyst: '19 mine strikes vs Oman talks',
+    note: 'Araghchi meets Sultan; Qeshm Island struck again',
+  },
+  {
+    date: 'Nov 18 (IST)',
+    price: 92.69,
+    catalyst: 'Shenzhen summit confirmed',
+    note: 'Partial reversal of peace trade; physical M1–M2 stays at +$2.73',
+  },
+];
+
+export const M1_M2_REGIMES = [
+  {
+    range: 'Below +$1.50',
+    signal: 'relief' as const,
+    label: 'Relief',
+    meaning: 'Physical market pricing a deal — prompt barrels readily available',
+  },
+  {
+    range: '+$1.50 to +$2.50',
+    signal: 'watch' as const,
+    label: 'Watch',
+    meaning: 'Elevated tightness — watch carefully (touched +$1.98 on Nov 10)',
+  },
+  {
+    range: 'Above +$2.50',
+    signal: 'danger' as const,
+    label: 'Danger',
+    meaning: 'War-level physical tightness — current reading +$2.73',
+    isActive: true,
+  },
+];
+
+export const DATED_VS_CO1_GAP = {
+  currentGap: 0.34,
+  lastWeekPeak: 3.49,
+  alertThreshold: 2.00,
+  datedBrent: 93.03,
+  co1: 92.69,
+  explanation:
+    'When the Dated Brent vs. CO1 spread widens above $2.00 (as it did last week at $3.49), physical buyers are paying a war premium that paper futures ignore. At $0.34 today, paper and spot physical are closer — yet M1–M2 at +$2.73 still signals severe prompt tightness.',
+};
+
+export const WAR_STATUS_PANEL: WarStatusItem[] = [
+  {
+    id: 'hormuz',
+    label: 'Strait of Hormuz',
+    status: 'Partially open',
+    signal: 'danger',
+    detail: 'Mine campaign active — 19 vessels struck since Nov 15',
+  },
+  {
+    id: 'bab-el-mandeb',
+    label: 'Bab el-Mandeb',
+    status: 'Houthis advancing',
+    signal: 'danger',
+    detail: 'Saudi forces retreated to Aden on Nov 15',
+  },
+  {
+    id: 'diplomacy-oman',
+    label: 'Oman Channel',
+    status: 'Sultan-level talks',
+    signal: 'relief',
+    detail: 'Iran FM Araghchi met Oman’s Sultan directly on Nov 17',
+  },
+  {
+    id: 'diplomacy-qatar-pak',
+    label: 'Qatar & Pakistan',
+    status: 'Active mediation',
+    signal: 'watch',
+    detail: 'Qatar formal mediation Nov 17; Pakistan conveyed Iran message, awaiting US reply',
+  },
+  {
+    id: 'trump-window',
+    label: "Trump's Unchecked Window",
+    status: '46 days remaining',
+    signal: 'danger',
+    detail: 'Republican Congress control ends Jan 3, 2027 — war oversight hearings follow',
+  },
+  {
+    id: 'opec-countdown',
+    label: 'OPEC+ Countdown',
+    status: '11 days to meeting',
+    signal: 'watch',
+    detail: 'November 29 ministerial — price defense vs. market share decision',
+  },
+];
+
+export const SCENARIOS: ScenarioItem[] = [
+  {
+    id: 'deal',
+    name: 'Deal / Ceasefire',
+    brentRange: '$75–80',
+    brentMid: 78,
+    vlccAssumption: 8,
+    inrImpact: '89.50–91.00',
+    probability: 25,
+    signal: 'relief',
+    trigger: 'Signal to watch: M1–M2 backwardation below +$1.50 sustained',
+  },
+  {
+    id: 'limbo',
+    name: 'Limbo / Strangulation',
+    brentRange: '$88–95',
+    brentMid: 92.69,
+    vlccAssumption: 20,
+    inrImpact: '92.50–94.50',
+    probability: 55,
+    signal: 'watch',
+    isBaseCase: true,
+    trigger: 'Current base case: Iron Gate blockade + Hormuz attrition persists',
+  },
+  {
+    id: 'strike',
+    name: 'Third Strike Escalation',
+    brentRange: '$110–125',
+    brentMid: 118,
+    vlccAssumption: 28,
+    inrImpact: '96.00+ red line breach',
+    probability: 20,
+    signal: 'danger',
+    trigger: 'Signal: Netanyahu secures Trump green light before Jan 3 window closes',
+  },
+];
+
+export const JAVIER_BLAS_QUOTE = {
+  quote: '"$90 Brent is wrong — it is either too low or too high. The market is pricing a coin flip."',
+  attribution: 'Javier Blas framework · Why paper $92.69 is unstable against +$2.73 M1–M2 tightness',
+};
+
+export const WAR_TIMELINE: TimelineEvent[] = [
+  {
+    id: 'ev-15',
+    date: 'Nov 18, 2026',
+    title: 'Xi-Trump-Putin Shenzhen summit confirmed for Nov 19',
+    detail: 'Trilateral summit set for tomorrow alongside Kuwait drone attack confirmation and Nvidia earnings beat.',
+    category: 'diplomacy',
+    brentTag: '$92.69',
+    signal: 'watch',
+  },
+  {
+    id: 'ev-14',
+    date: 'Nov 17, 2026',
+    title: 'Oman Sultan & Qatar mediate as 19 tankers hit by mines',
+    detail: 'Araghchi meets Oman’s Sultan directly; Qatar hosts formal mediation; US strikes Qeshm Island; Iran threatens Bahrain’s survival.',
+    category: 'diplomacy',
+    brentTag: '$93.15',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-13',
+    date: 'Nov 16, 2026',
+    title: 'USS Theodore Roosevelt arrives; Kuwait hit by drones',
+    detail: 'Third US carrier brings 144 strike fighters into the Gulf; Kuwait struck by drones for the first time.',
+    category: 'military',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-12',
+    date: 'Nov 15, 2026',
+    title: 'Supertanker sinks in Hormuz; Houthis take Bab el-Mandeb',
+    detail: '2 million barrels lost in Hormuz sinking; Saudi forces retreat to Aden.',
+    category: 'military',
+    brentTag: '$93.80',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-11',
+    date: 'Nov 14, 2026',
+    title: 'Mossad chief Barnea in Washington lobbying for third strike',
+    detail: 'Netanyahu pressing for military escalation inside remaining Republican Congress window.',
+    category: 'diplomacy',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-10',
+    date: 'Nov 13, 2026',
+    title: 'Trump kills Vance back-channel; strangulation policy official',
+    detail: 'Administration rejects ceasefire channel in favor of economic and maritime strangulation.',
+    category: 'diplomacy',
+    brentTag: '$91.40',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-09',
+    date: 'Nov 11, 2026',
+    title: 'Iran Assembly of Experts: NPT withdrawal "unavoidable necessity"',
+    detail: 'Nuclear escalation risk spikes immediately after US peace rhetoric.',
+    category: 'diplomacy',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-08',
+    date: 'Nov 10, 2026',
+    title: 'Trump says war "effectively over" — Brent hits $90.16 war low',
+    detail: 'M1–M2 backwardation eases briefly to +$1.98 as peace trade peaks.',
+    category: 'market',
+    brentTag: '$90.16',
+    signal: 'relief',
+  },
+  {
+    id: 'ev-07',
+    date: 'Nov 7, 2026',
+    title: 'Operation Iron Gate extends blockade to land borders & Caspian',
+    detail: 'US widens maritime & terrestrial containment around Iran.',
+    category: 'military',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-06',
+    date: 'Nov 3, 2026',
+    title: 'Democrat midterm sweep triggers $14/bbl weekly Brent drop',
+    detail: 'Biggest weekly oil drop since COVID as market prices Jan 3, 2027 congressional war oversight.',
+    category: 'market',
+    brentTag: '-$14/wk',
+    signal: 'relief',
+  },
+  {
+    id: 'ev-05',
+    date: 'Oct 13, 2026',
+    title: 'Baltic Dirty Tanker Index peaks; VLCC freight hits $25/bbl',
+    detail: 'Extreme war-risk insurance and hull routing surcharges peak.',
+    category: 'market',
+    brentTag: 'VLCC $25',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-04',
+    date: 'July 2026',
+    title: 'Brent peaks at $135; USD/INR hits 96.57; RBI forced toward hike',
+    detail: 'Peak summer macro stress across Indian trade deficit and FX reserves.',
+    category: 'market',
+    brentTag: '$135.00',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-03',
+    date: 'June 18, 2026',
+    title: 'Versailles MOU — Vance negotiates ceasefire; Brent falls to $95',
+    detail: 'Temporary diplomatic thaw collapses later in summer.',
+    category: 'diplomacy',
+    brentTag: '$95.00',
+    signal: 'relief',
+  },
+  {
+    id: 'ev-02',
+    date: 'Mar–Apr 2026',
+    title: 'Hormuz mine campaign begins; VLCC freight spikes $6 to $20/bbl',
+    detail: 'Structural war tax locks in on Gulf-to-Asia crude voyages.',
+    category: 'military',
+    brentTag: 'VLCC $20',
+    signal: 'danger',
+  },
+  {
+    id: 'ev-01',
+    date: 'Feb 28, 2026',
+    title: 'US-Israel bomb Iran; Brent jumps $68 to $85 overnight',
+    detail: 'Conflict outbreak resets pre-war ~$74/bbl delivered Indian crude baseline.',
+    category: 'military',
+    brentTag: '$68→$85',
+    signal: 'danger',
+  },
+];
+
+export const INDIA_TRANSMISSION_CHAIN: TransmissionStep[] = [
+  {
+    id: 'oil',
+    label: 'Oil',
+    direction: 'down',
+    signal: 'watch',
+    statusText: 'Easing from $135 peak ($92.69 CO1 / ~$113 landed)',
+  },
+  {
+    id: 'import-bill',
+    label: 'Import Bill',
+    direction: 'up',
+    signal: 'danger',
+    statusText: 'Still elevated ($39.88bn Oct deficit, 1-yr high)',
+  },
+  {
+    id: 'rupee',
+    label: 'Rupee',
+    direction: 'up',
+    signal: 'relief',
+    statusText: 'Recovering at 93.41 (below 95.00 red line)',
+  },
+  {
+    id: 'inflation',
+    label: 'Inflation & RBI',
+    direction: 'up',
+    signal: 'danger',
+    statusText: 'RBI hiked Oct 2026 to 5.50% (tightening bias)',
+  },
+  {
+    id: 'nifty',
+    label: 'Nifty 50',
+    direction: 'up',
+    signal: 'relief',
+    statusText: 'Recovering to 25,371 (8-mo high, $5bn+ Nov FII)',
+  },
+];
+
+export const INDIA_IMPORT_MIX: ImportMixItem[] = [
+  {
+    source: 'Gulf (Saudi, Iraq, UAE)',
+    shareNov: 54,
+    shareJul: 34,
+    note: 'Surpassed Russia for the first time since war began',
+    colorClass: 'bg-amber-600 dark:bg-amber-500',
+  },
+  {
+    source: 'Russia',
+    shareNov: 35,
+    shareJul: 56,
+    note: 'Down from 56% in July as VLCC freight costs ate the discount',
+    colorClass: 'bg-slate-700 dark:bg-slate-400',
+  },
+  {
+    source: 'Others (US, Guyana, Venezuela)',
+    shareNov: 11,
+    shareJul: 10,
+    note: 'Growing Hormuz-free diversification corridor',
+    colorClass: 'bg-emerald-600 dark:bg-emerald-500',
+  },
+];
+
+export const INDIA_KEY_METRICS = [
+  {
+    label: 'India Trade Deficit (Oct)',
+    value: '$39.88bn',
+    signal: 'danger' as const,
+    note: 'One-year high driven by landed crude & freight bill',
+  },
+  {
+    label: 'India Crude Basket (PPAC)',
+    value: '~$100/bbl',
+    signal: 'watch' as const,
+    note: 'Down from $123 October peak, still ~$26 above pre-war',
+  },
+  {
+    label: 'RBI Repo Rate',
+    value: '5.50%',
+    signal: 'danger' as const,
+    note: 'Calibrated tightening bias; next policy decision Dec 2026',
+  },
+  {
+    label: 'Nifty 50',
+    value: '25,371',
+    signal: 'relief' as const,
+    note: '8-month high backed by $5bn+ foreign inflows in November',
+  },
+  {
+    label: 'USD/INR Spot',
+    value: '93.41',
+    signal: 'relief' as const,
+    note: 'Strongest since April (July peak 96.57; red line 95.00)',
+  },
+];
+
+export const INDIA_ENERGY_CATALYSTS = [
+  {
+    title: 'Qatar LNG backlog to Petronet',
+    metric: '90 cargoes',
+    signal: 'danger' as const,
+    note: 'Mounting supply gap under India’s largest long-term gas contract',
+  },
+  {
+    title: 'Guyana crude offer',
+    metric: 'Up to 1m b/d',
+    signal: 'relief' as const,
+    note: 'Hormuz-free supply corridor; watch for ONGC Videsh equity talks',
+  },
+  {
+    title: 'Reliance UCG (Andhra Pradesh)',
+    metric: '$4.6bn',
+    signal: 'relief' as const,
+    note: 'Coal-to-gas project acting as direct hedge against Hormuz LNG disruption',
+  },
+  {
+    title: 'ONGC Q2 profit surge',
+    metric: '+57% YoY',
+    signal: 'relief' as const,
+    note: 'India’s upstream producers remain domestic beneficiaries of elevated crude',
+  },
+  {
+    title: 'IOC Panipat SAF approval',
+    metric: 'First in India',
+    signal: 'relief' as const,
+    note: 'Panipat refinery cleared for commercial sustainable aviation fuel production',
+  },
+];
+
+export const AI_BOND_STATS = [
+  { label: 'YTD 2026 AI / Hyperscaler Issuance', value: '$540bn+', numericBn: 540, note: 'JPMorgan full-year forecast already exceeded' },
+  { label: 'Oct 29 – Nov 7 Window (5 Deals)', value: '$67bn', numericBn: 67, note: 'Compressed supply wave forced wider spreads' },
+  { label: '2027 Penciled Pipeline', value: '$740bn', numericBn: 740, note: 'Raises EM capital crowding-out risk into 2027' },
+  { label: 'New Issue Concessions', value: '20–30bps', numericBn: 25, note: '3–4x normal concession for AAA/AA borrowers' },
+];
+
+export const CREDIT_STRESS_METRICS: CreditMetric[] = [
+  {
+    id: 'ig-oas',
+    name: 'IG OAS',
+    ticker: 'LUACOAS',
+    value: '88bps',
+    watchThreshold: 'Watch: 100bps',
+    signal: 'relief',
+    statusLabel: 'Normal',
+    interpretation: 'Within 80–100bps normal band despite $540bn+ supply',
+  },
+  {
+    id: 'hy-oas',
+    name: 'HY OAS',
+    ticker: 'LF98OAS',
+    value: '320bps',
+    watchThreshold: 'Watch: 350bps',
+    signal: 'relief',
+    statusLabel: 'Upper Normal',
+    interpretation: 'Upper end of normal range; watch 350bps break for contagion',
+  },
+  {
+    id: 'vix',
+    name: 'CBOE VIX',
+    ticker: 'VIX Index',
+    value: '18.38',
+    watchThreshold: 'Watch: 25.00',
+    signal: 'relief',
+    statusLabel: 'Calm',
+    interpretation: 'Below 20 calm threshold even after Nvidia volatility',
+  },
+  {
+    id: 'move',
+    name: 'MOVE Index',
+    ticker: 'MOVE Index',
+    value: '92.43',
+    watchThreshold: 'Elevated >90',
+    signal: 'watch',
+    statusLabel: 'Watch',
+    interpretation: 'Bond market materially more nervous than equities on 5.01% 10Y',
+  },
+  {
+    id: 'gold',
+    name: 'Gold Spot',
+    ticker: 'XAU/USD',
+    value: '$3,945/oz',
+    watchThreshold: 'Stagflation hedge',
+    signal: 'danger',
+    statusLabel: 'Danger',
+    interpretation: 'War-level stagflation and fiscal-dominance signal',
+  },
+  {
+    id: 'silver',
+    name: 'Silver Spot',
+    ticker: 'XAG/USD',
+    value: '$51.27/oz',
+    watchThreshold: 'Historical high',
+    signal: 'danger',
+    statusLabel: 'Danger',
+    interpretation: 'Historically elevated alongside industrial & monetary bid',
+  },
+];
+
+export const STRESS_WATERFALL = [
+  { step: '01', label: 'AI Bond Concessions', status: 'Active now (20–30bps)', signal: 'watch' as const },
+  { step: '02', label: 'IG OAS Widening', status: '88bps · Watch 100bps', signal: 'relief' as const },
+  { step: '03', label: 'HY OAS Widening', status: '320bps · Watch 350bps', signal: 'relief' as const },
+  { step: '04', label: 'VIX Spike', status: '18.38 · Watch 25', signal: 'relief' as const },
+  { step: '05', label: 'Equity Selloff', status: 'Not triggered', signal: 'relief' as const },
+];
+
+export const CREDIT_EVENTS = [
+  {
+    title: 'Nvidia Q3 earnings beat (Nov 17)',
+    detail: 'Revenue $115.8bn (+6.3% above consensus), $150bn buyback added, stock +4.8% after hours.',
+    signal: 'relief' as const,
+  },
+  {
+    title: 'Nvidia CEO ousted — interim Colette Kress',
+    detail: 'Jensen Huang removed; $601bn market cap erased at intraday low. Q4 guide raised, but $2.4bn China Hopper sales will not recur.',
+    signal: 'danger' as const,
+  },
+  {
+    title: 'Anthropic $15bn data center bond shelved',
+    detail: 'Pulled following Texas Governor moratorium on new data center approvals post-Democrat sweep.',
+    signal: 'watch' as const,
+  },
+  {
+    title: 'ING selling ~$500m data center loans',
+    detail: 'Competitive bid offload signals commercial bank appetite for concentrated AI infra credit is tightening.',
+    signal: 'watch' as const,
+  },
+];
+
+export const INDIA_DATA_CENTERS: DataCenterDeal[] = [
+  {
+    company: 'Google',
+    amountBn: 15.0,
+    capacity: 'AI Hub',
+    location: 'Andhra Pradesh',
+    note: 'Anchor hyperscale AI hub commitment',
+  },
+  {
+    company: 'AirTrunk (Blackstone)',
+    amountBn: 11.0,
+    capacity: '1.8 GW',
+    location: 'Andhra Pradesh',
+    note: 'Filed November 14, 2026',
+  },
+  {
+    company: 'Reliance + JV',
+    amountBn: 11.0,
+    capacity: 'Hyperscale',
+    location: 'Andhra Pradesh',
+    note: 'Domestic JV data center capacity buildout',
+  },
+  {
+    company: 'ReNew Energy',
+    amountBn: 8.5,
+    capacity: '1.0 GW',
+    location: 'Andhra Pradesh',
+    note: 'Green-powered hyperscale campus',
+  },
+  {
+    company: 'TCS HyperVault',
+    amountBn: 7.4,
+    capacity: '1.0 GW',
+    location: 'Hyderabad',
+    note: 'Dedicated AI compute campus',
+  },
+];
+
+export const POLICY_UPCOMING_DATES: PolicyDateItem[] = [
+  {
+    date: 'Nov 19, 2026',
+    event: 'Xi–Trump–Putin Shenzhen trilateral summit',
+    impact: 'Immediate binary catalyst for Strait of Hormuz & sanctions de-escalation',
+    signal: 'watch',
+  },
+  {
+    date: 'Nov 26, 2026',
+    event: 'RBI PSL draft directions comment deadline',
+    impact: 'LC bill discounting ANBC inclusion (₹10,000cr added = ₹4,000cr more PSL)',
+    signal: 'watch',
+  },
+  {
+    date: 'Nov 29, 2026',
+    event: 'OPEC+ Ministerial Meeting (11 days)',
+    impact: 'Saudi output at war-high 10.56 mb/d — price defense vs. market share test',
+    signal: 'watch',
+  },
+  {
+    date: 'Dec 2026',
+    event: 'US Federal Reserve FOMC decision',
+    impact: '28bp priced (25bp base case, real 50bp tail risk after +0.4% Oct CPI)',
+    signal: 'danger',
+  },
+  {
+    date: 'Dec 2026',
+    event: 'RBI Monetary Policy Committee decision',
+    impact: 'Repo at 5.50%; Fed 50bp hike would force RBI’s hand despite easing oil',
+    signal: 'watch',
+  },
+  {
+    date: 'Jan 3, 2027',
+    event: 'Democrats take US Congress',
+    impact: 'War oversight hearings begin; Trump’s unchecked 46-day executive window closes',
+    signal: 'danger',
+  },
+];

@@ -1,0 +1,185 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 2 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidSignal(sig) {
+      return sig is string && sig in ['relief', 'watch', 'danger'];
+    }
+
+    function isValidInstrument(data) {
+      return data.keys().hasAll([
+          'id', 'name', 'ticker', 'value', 'numericValue', 'unit',
+          'signal', 'signalLabel', 'interpretation', 'isPmCore',
+          'sortOrder', 'isPublic', 'updatedByUid', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'name', 'ticker', 'value', 'numericValue', 'unit',
+          'signal', 'signalLabel', 'interpretation', 'isPmCore',
+          'sortOrder', 'isPublic', 'updatedByUid', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 80
+        && data.ticker is string && data.ticker.size() >= 1 && data.ticker.size() <= 40
+        && data.value is string && data.value.size() >= 1 && data.value.size() <= 32
+        && data.numericValue is number
+        && data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 24
+        && isValidSignal(data.signal)
+        && data.signalLabel is string && data.signalLabel.size() >= 1 && data.signalLabel.size() <= 32
+        && data.interpretation is string && data.interpretation.size() >= 3 && data.interpretation.size() <= 240
+        && data.isPmCore is bool
+        && data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 100
+        && data.isPublic == true
+        && data.updatedByUid is string && data.updatedByUid == request.auth.uid && data.updatedByUid.size() <= 128
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSnapshot(data) {
+      return data.keys().hasAll([
+          'id', 'updatedLabel', 'nifty50', 'rbiRepoRate', 'igOasBps',
+          'hyOasBps', 'vix', 'moveIndex', 'goldSpot', 'silverSpot',
+          'isPublic', 'updatedByUid', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'updatedLabel', 'nifty50', 'rbiRepoRate', 'igOasBps',
+          'hyOasBps', 'vix', 'moveIndex', 'goldSpot', 'silverSpot',
+          'macroSummary', 'sourceUrls',
+          'isPublic', 'updatedByUid', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.updatedLabel is string && data.updatedLabel.size() >= 4 && data.updatedLabel.size() <= 80
+        && data.nifty50 is number && data.nifty50 > 0
+        && data.rbiRepoRate is number && data.rbiRepoRate >= 0
+        && data.igOasBps is number && data.igOasBps >= 0
+        && data.hyOasBps is number && data.hyOasBps >= 0
+        && data.vix is number && data.vix >= 0
+        && data.moveIndex is number && data.moveIndex >= 0
+        && data.goldSpot is number && data.goldSpot > 0
+        && data.silverSpot is number && data.silverSpot > 0
+        && (!('macroSummary' in data) || (data.macroSummary is string && data.macroSummary.size() >= 3 && data.macroSummary.size() <= 500))
+        && (!('sourceUrls' in data) || (data.sourceUrls is list && data.sourceUrls.size() <= 8 && (data.sourceUrls.size() == 0 || (data.sourceUrls[0] is string && data.sourceUrls[0].size() <= 300))))
+        && data.isPublic == true
+        && data.updatedByUid is string && data.updatedByUid == request.auth.uid && data.updatedByUid.size() <= 128
+        && data.updatedAt == request.time;
+    }
+
+    function isValidPriceAlert(data) {
+      return data.keys().hasAll([
+          'id', 'ownerUid', 'instrumentId', 'instrumentName', 'direction',
+          'thresholdPrice', 'notifyBrowser', 'notifyEmail', 'emailAddress',
+          'isActive', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'instrumentId', 'instrumentName', 'direction',
+          'thresholdPrice', 'notifyBrowser', 'notifyEmail', 'emailAddress',
+          'isActive', 'lastTriggeredPrice', 'triggeredAtIso', 'updatedAt'
+        ])
+        && isValidId(data.id) && data.id.size() >= 4
+        && data.ownerUid is string && data.ownerUid == request.auth.uid && data.ownerUid.size() <= 128
+        && isValidId(data.instrumentId) && data.instrumentId.size() <= 64
+        && data.instrumentName is string && data.instrumentName.size() >= 2 && data.instrumentName.size() <= 80
+        && data.direction is string && data.direction in ['above', 'below']
+        && data.thresholdPrice is number
+        && data.notifyBrowser is bool
+        && data.notifyEmail is bool
+        && data.emailAddress is string && data.emailAddress.size() <= 160
+        && data.isActive is bool
+        && (!('lastTriggeredPrice' in data) || data.lastTriggeredPrice is number)
+        && (!('triggeredAtIso' in data) || (data.triggeredAtIso is string && data.triggeredAtIso.size() <= 64))
+        && data.updatedAt == request.time;
+    }
+
+    // Connection validation probe doc (read-only)
+    match /test/{docId} {
+      allow get: if docId == 'connection';
+      allow list, write: if false;
+    }
+
+    match /marketInstruments/{instrumentId} {
+      allow get: if isValidId(instrumentId) && (resource == null || existing().isPublic == true);
+      allow list: if existing().isPublic == true;
+      allow create: if isVerifiedUser()
+        && isValidId(instrumentId)
+        && isValidInstrument(incoming())
+        && incoming().id == instrumentId;
+      allow update: if isVerifiedUser()
+        && isValidId(instrumentId)
+        && isValidInstrument(incoming())
+        && incoming().id == existing().id
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'value', 'numericValue', 'signal', 'signalLabel', 'interpretation', 'updatedByUid', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /marketSnapshots/{snapshotId} {
+      allow get: if isValidId(snapshotId) && (resource == null || existing().isPublic == true);
+      allow list: if existing().isPublic == true;
+      allow create: if isVerifiedUser()
+        && isValidId(snapshotId)
+        && isValidSnapshot(incoming())
+        && incoming().id == snapshotId;
+      allow update: if isVerifiedUser()
+        && isValidId(snapshotId)
+        && isValidSnapshot(incoming())
+        && incoming().id == existing().id
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'updatedLabel', 'nifty50', 'rbiRepoRate', 'igOasBps', 'hyOasBps',
+          'vix', 'moveIndex', 'goldSpot', 'silverSpot', 'macroSummary', 'sourceUrls',
+          'updatedByUid', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // Owner-isolated price threshold alerts (contains user email PII -> strictly private to owner)
+    match /priceAlerts/{alertId} {
+      allow get: if isVerifiedUser()
+        && isValidId(alertId)
+        && (resource == null || existing().ownerUid == request.auth.uid);
+      allow list: if isVerifiedUser()
+        && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(alertId)
+        && isValidPriceAlert(incoming())
+        && incoming().id == alertId;
+      allow update: if isVerifiedUser()
+        && isValidId(alertId)
+        && existing().ownerUid == request.auth.uid
+        && isValidPriceAlert(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().instrumentId == existing().instrumentId
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'direction', 'thresholdPrice', 'notifyBrowser', 'notifyEmail',
+          'emailAddress', 'isActive', 'lastTriggeredPrice', 'triggeredAtIso', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser()
+        && isValidId(alertId)
+        && existing().ownerUid == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,302 @@
+{
+  "entities": {
+    "MarketInstrument": {
+      "title": "MarketInstrument",
+      "description": "Live market instrument quote, signal regime, and one-line plain-English interpretation.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable instrument identifier slug.",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the market instrument.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "ticker": {
+          "type": "string",
+          "description": "Market ticker symbol.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "value": {
+          "type": "string",
+          "description": "Formatted display quote value.",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "numericValue": {
+          "type": "number",
+          "description": "Numeric quote value for calculations and signal evaluation."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement.",
+          "minLength": 1,
+          "maxLength": 24
+        },
+        "signal": {
+          "type": "string",
+          "description": "Semantic risk signal level.",
+          "enum": ["relief", "watch", "danger"]
+        },
+        "signalLabel": {
+          "type": "string",
+          "description": "Short label paired with the signal.",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "interpretation": {
+          "type": "string",
+          "description": "One-line plain-English analyst interpretation.",
+          "minLength": 3,
+          "maxLength": 240
+        },
+        "isPmCore": {
+          "type": "boolean",
+          "description": "Whether the instrument appears in the PM 10-second check."
+        },
+        "sortOrder": {
+          "type": "number",
+          "description": "Display ordering index."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks non-PII market quote readable by dashboard viewers."
+        },
+        "updatedByUid": {
+          "type": "string",
+          "description": "UID of the authenticated user who published the quote.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-validated update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "ticker",
+        "value",
+        "numericValue",
+        "unit",
+        "signal",
+        "signalLabel",
+        "interpretation",
+        "isPmCore",
+        "sortOrder",
+        "isPublic",
+        "updatedByUid",
+        "updatedAt"
+      ]
+    },
+    "MarketSnapshot": {
+      "title": "MarketSnapshot",
+      "description": "Real-time cross-panel macro snapshot syncing Nifty, RBI rate, credit spreads, and scenario probabilities.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Snapshot document key.",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "updatedLabel": {
+          "type": "string",
+          "description": "Human-readable IST timestamp label.",
+          "minLength": 4,
+          "maxLength": 80
+        },
+        "nifty50": {
+          "type": "number",
+          "description": "Nifty 50 index level."
+        },
+        "rbiRepoRate": {
+          "type": "number",
+          "description": "RBI policy repo rate percentage."
+        },
+        "igOasBps": {
+          "type": "number",
+          "description": "Investment grade OAS spread in basis points."
+        },
+        "hyOasBps": {
+          "type": "number",
+          "description": "High yield OAS spread in basis points."
+        },
+        "vix": {
+          "type": "number",
+          "description": "CBOE VIX index."
+        },
+        "moveIndex": {
+          "type": "number",
+          "description": "ICE BofA MOVE index."
+        },
+        "goldSpot": {
+          "type": "number",
+          "description": "Gold spot price in USD/oz."
+        },
+        "silverSpot": {
+          "type": "number",
+          "description": "Silver spot price in USD/oz."
+        },
+        "macroSummary": {
+          "type": "string",
+          "description": "Grounded macro summary retrieved via Google Search.",
+          "minLength": 3,
+          "maxLength": 500
+        },
+        "sourceUrls": {
+          "type": "array",
+          "description": "Up to 8 verified Google Search source URLs backing the snapshot."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks non-PII macro snapshot readable by dashboard viewers."
+        },
+        "updatedByUid": {
+          "type": "string",
+          "description": "UID of the authenticated user who updated the snapshot.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-validated update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "updatedLabel",
+        "nifty50",
+        "rbiRepoRate",
+        "igOasBps",
+        "hyOasBps",
+        "vix",
+        "moveIndex",
+        "goldSpot",
+        "silverSpot",
+        "isPublic",
+        "updatedByUid",
+        "updatedAt"
+      ]
+    },
+    "PriceAlert": {
+      "title": "PriceAlert",
+      "description": "Per-user instrument price threshold alert configuration with browser and email notification toggles.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Composite alert identifier (uid_instrumentId).",
+          "minLength": 4,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "UID of the verified user who owns the alert.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Target Oil Dashboard instrument slug.",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "instrumentName": {
+          "type": "string",
+          "description": "Human-readable instrument display name.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "direction": {
+          "type": "string",
+          "description": "Comparison condition for triggering the threshold.",
+          "enum": ["above", "below"]
+        },
+        "thresholdPrice": {
+          "type": "number",
+          "description": "Numeric threshold value that triggers notifications."
+        },
+        "notifyBrowser": {
+          "type": "boolean",
+          "description": "Whether browser notifications are enabled."
+        },
+        "notifyEmail": {
+          "type": "boolean",
+          "description": "Whether email notifications are enabled."
+        },
+        "emailAddress": {
+          "type": "string",
+          "description": "Target email address for alert notifications.",
+          "minLength": 0,
+          "maxLength": 160
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the alert is currently armed."
+        },
+        "lastTriggeredPrice": {
+          "type": "number",
+          "description": "Last instrument price at which this alert triggered."
+        },
+        "triggeredAtIso": {
+          "type": "string",
+          "description": "ISO timestamp of the last trigger event.",
+          "minLength": 0,
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-validated update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerUid",
+        "instrumentId",
+        "instrumentName",
+        "direction",
+        "thresholdPrice",
+        "notifyBrowser",
+        "notifyEmail",
+        "emailAddress",
+        "isActive",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/marketInstruments/{instrumentId}": {
+      "schema": {
+        "$ref": "#/entities/MarketInstrument"
+      },
+      "description": "Seven core oil, freight, FX, and gas instruments synced in real time to the dashboard."
+    },
+    "/marketSnapshots/{snapshotId}": {
+      "schema": {
+        "$ref": "#/entities/MarketSnapshot"
+      },
+      "description": "Global macro and credit stress snapshot synchronized across dashboard panels."
+    },
+    "/priceAlerts/{alertId}": {
+      "schema": {
+        "$ref": "#/entities/PriceAlert"
+      },
+      "description": "User-scoped price threshold alerts with browser and email notification preferences."
+    }
+  }
+}

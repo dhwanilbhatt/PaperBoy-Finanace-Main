@@ -1,0 +1,8 @@
+{
+  "name": "Paperboy Finance",
+  "description": "MacroLens: Real-time energy, geopolitics, India transmission, capital markets credit stress, and central bank policy intelligence for emerging market analysts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
